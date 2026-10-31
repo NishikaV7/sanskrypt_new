@@ -14,6 +14,9 @@
             </ol>
         </nav>
         <div class="d-flex gap-2">
+            <a href="{{ url_for('ask_view') }}?manuscript_id={{ manuscript.id }}" class="btn btn-sm btn-sanskrypt">
+                <i class="bi bi-chat-dots me-1"></i> Ask
+            </a>
             <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-sanskrypt">
                 <i class="bi bi-cloud-arrow-up me-1"></i> Upload Another
             </a>

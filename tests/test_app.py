@@ -47,7 +47,8 @@ def test_upload_success_and_low_confidence_flow(client, sample_image_path):
          patch("app.translate_text", return_value="I am the infinite reality / Brahman."), \
          patch("app.generate_explanation", return_value="Mahavakya from Brihadaranyaka Upanishad asserting divine identity."), \
          patch("app.extract_keywords", return_value="Brahman, Upanishad, Identity, Advaita"), \
-         patch("app.classify_content", return_value="Philosophy"):
+         patch("app.classify_content", return_value="Philosophy"), \
+         patch("app.index_manuscript", return_value=1):
 
         response = client.post("/upload", data=data, follow_redirects=True, content_type="multipart/form-data")
         assert response.status_code == 200

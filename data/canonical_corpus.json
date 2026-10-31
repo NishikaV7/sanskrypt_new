@@ -1,0 +1,152 @@
+[
+  {
+    "passage_id": "PHIL-UP-001",
+    "sanskrit": "सत्यमेव जयते नानृतं सत्येन पन्था विततो देवयानः।",
+    "translation": "Truth alone triumphs, not falsehood; through truth the divine path of the gods is unfolded.",
+    "domain": "Philosophy",
+    "source": "Mundaka Upanishad",
+    "reference": "Mundaka 3.1.6",
+    "verification_status": "verified_canonical",
+    "keywords": "Satya, Truth, Dharma, Divine Path, Upanishad"
+  },
+  {
+    "passage_id": "PHIL-UP-002",
+    "sanskrit": "ब्रह्म वा इदमग्र आसीत्तदात्मानमेवावेत्। अहं ब्रह्मास्मीति तस्मात्तत्सर्वमभवत्।",
+    "translation": "Brahman was this universe in the beginning. It knew only Itself as 'I am Brahman (the Supreme Reality)', therefore It became all.",
+    "domain": "Philosophy",
+    "source": "Brihadaranyaka Upanishad",
+    "reference": "Brihadaranyaka 1.4.10",
+    "verification_status": "verified_canonical",
+    "keywords": "Brahman, Atman, Mahavakya, Creation, Consciousness"
+  },
+  {
+    "passage_id": "PHIL-UP-003",
+    "sanskrit": "स य एषोऽणिमैतदात्म्यमिदँ सर्वं तत्सत्यँ स आत्मा तत्त्वमसि श्वेतकेतो।",
+    "translation": "That which is the finest subtle essence, this whole universe has that as its soul. That is Reality. That is the Soul. That Thou Art, O Shvetaketu.",
+    "domain": "Philosophy",
+    "source": "Chandogya Upanishad",
+    "reference": "Chandogya 6.8.7",
+    "verification_status": "verified_canonical",
+    "keywords": "Tat Tvam Asi, Shvetaketu, Atman, Essence, Truth"
+  },
+  {
+    "passage_id": "PHIL-BG-001",
+    "sanskrit": "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
+    "translation": "You have a right only to perform your prescribed duty, but never to the fruits of action. Let not the fruits of action be your motive, nor let your attachment be to inaction.",
+    "domain": "Philosophy",
+    "source": "Bhagavad Gita",
+    "reference": "Chapter 2, Verse 47",
+    "verification_status": "verified_canonical",
+    "keywords": "Karma, Nishkama Karma, Duty, Detachment, Action"
+  },
+  {
+    "passage_id": "PHIL-BG-002",
+    "sanskrit": "बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते। तस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम्॥",
+    "translation": "Endowed with equanimity of mind, one frees oneself in this life from both good and bad deeds. Therefore strive for Yoga; Yoga is skill and poise in action.",
+    "domain": "Philosophy",
+    "source": "Bhagavad Gita",
+    "reference": "Chapter 2, Verse 50",
+    "verification_status": "verified_canonical",
+    "keywords": "Yoga, Equanimity, Action, Skill, Wisdom"
+  },
+  {
+    "passage_id": "PHIL-UP-004",
+    "sanskrit": "असतो मा सद्गमय। तमसो मा ज्योतिर्गमय। मृत्योर्मा अमृतं गमय॥",
+    "translation": "Lead me from the unreal to the real. Lead me from darkness to light. Lead me from death to immortality.",
+    "domain": "Philosophy",
+    "source": "Brihadaranyaka Upanishad",
+    "reference": "Brihadaranyaka 1.3.28",
+    "verification_status": "verified_canonical",
+    "keywords": "Prayer, Light, Truth, Immortality, Reality"
+  },
+  {
+    "passage_id": "AYUR-AH-001",
+    "sanskrit": "वायुः पित्तं कफश्चेति त्रयो दोषाः समासतः। विकृताऽविकृता देहं घ्नन्ति ते वर्तयन्ति च॥",
+    "translation": "Vata, Pitta, and Kapha are the three doshas (bodily humors) stated in brief. When abnormal they destroy the body, and when in harmony they sustain it.",
+    "domain": "Ayurveda",
+    "source": "Ashtanga Hridaya",
+    "reference": "Sutrasthana 1.6",
+    "verification_status": "verified_canonical",
+    "keywords": "Vata, Pitta, Kapha, Tridosha, Physiology, Health"
+  },
+  {
+    "passage_id": "AYUR-SS-001",
+    "sanskrit": "समदोषः समाग्निश्च समधातुमलक्रियः। प्रसन्नात्मेन्द्रियमनाः स्वस्थ इत्यभिधीयते॥",
+    "translation": "One who possesses balanced humors (doshas), balanced digestion (agni), properly balanced bodily tissues (dhatus) and excretions (malas), and whose soul, senses, and mind are tranquil is designated as healthy (svastha).",
+    "domain": "Ayurveda",
+    "source": "Sushruta Samhita",
+    "reference": "Sutrasthana 15.41",
+    "verification_status": "verified_canonical",
+    "keywords": "Svastha, Health, Dhatu, Agni, Dosha, Tranquility"
+  },
+  {
+    "passage_id": "AYUR-CS-001",
+    "sanskrit": "सर्वदा सर्वभावानां सामान्यं वृद्धिकारणम्। ह्रासहेतुर्विशेषश्च प्रवृत्तिरुभयस्य तु॥",
+    "translation": "At all times, similarity of properties is the cause of increase of all substances, whereas dissimilarity is the cause of decrease. Both act through continuous application.",
+    "domain": "Ayurveda",
+    "source": "Charaka Samhita",
+    "reference": "Sutrasthana 1.44",
+    "verification_status": "verified_canonical",
+    "keywords": "Samanya, Vishesha, Dravyaguna, Causation, Treatment Principle"
+  },
+  {
+    "passage_id": "AYUR-AH-002",
+    "sanskrit": "नित्यं हिताहारविहारसेवी समीक्ष्यकारी विषयेष्वसक्तः। दाता समः सत्यपरः क्षमावान् आप्तोपसेवी च भवत्यरोगः॥",
+    "translation": "One who constantly partakes of wholesome food and lifestyle, acts with circumspection, remains unattached to sensory overindulgence, is generous, impartial, truthful, forgiving, and heeds authentic teachers remains free of disease.",
+    "domain": "Ayurveda",
+    "source": "Ashtanga Hridaya",
+    "reference": "Sutrasthana 4.36",
+    "verification_status": "verified_canonical",
+    "keywords": "Arogya, Diet, Lifestyle, Prevention, Ethics"
+  },
+  {
+    "passage_id": "AYUR-CS-002",
+    "sanskrit": "प्रयोजनं चास्य तन्त्रस्य स्वस्थस्य स्वास्थ्यरक्षणम्। आतुरस्य विकारप्रशमनं च॥",
+    "translation": "The purpose of this medical treatise is the preservation of health in the healthy and the alleviation of disorder in the afflicted.",
+    "domain": "Ayurveda",
+    "source": "Charaka Samhita",
+    "reference": "Sutrasthana 30.26",
+    "verification_status": "verified_canonical",
+    "keywords": "Objective, Prevention, Treatment, Health Maintenance"
+  },
+  {
+    "passage_id": "ASTRO-AB-001",
+    "sanskrit": "मखि भखि फखि धखि णखि ञखि ङखि हस्झ स्ककि किष्ग श्घकि किघ्व। घ्लकि किग्र हक्य धकि किच स्ग श्झ ङ्व क्ल प्त फ छ कलार्धज्याः॥",
+    "translation": "Aryabhata's alphabetical mnemonic table defining twenty-four geometric sine differences (jya-ardha) in arcminutes for astronomical computation and trigonometry.",
+    "domain": "Astronomy",
+    "source": "Aryabhatiya",
+    "reference": "Gitikapada 12",
+    "verification_status": "verified_canonical",
+    "keywords": "Aryabhata, Sine Table, Trigonometry, Jya, Computation"
+  },
+  {
+    "passage_id": "ASTRO-AB-002",
+    "sanskrit": "अनुलोमगतिर्नौस्थः पश्यत्यचलं विलोमगं यद्वत्। अचलानि भानि तद्वत् समपश्चिमगानि लङ्कायाम्॥",
+    "translation": "Just as a person seated in a forward-moving boat sees stationary trees on the bank moving backward, so an observer at Lanka perceives the stationary stars as moving directly westward due to earth's rotation.",
+    "domain": "Astronomy",
+    "source": "Aryabhatiya",
+    "reference": "Golapada 9",
+    "verification_status": "verified_canonical",
+    "keywords": "Earth Rotation, Celestial Sphere, Relative Motion, Stars"
+  },
+  {
+    "passage_id": "ASTRO-SS-001",
+    "sanskrit": "ग्रहाणां भ्रमणं वदन्ति भगणैः सहितास्तथा। सूर्यादीनां च सर्वेषां प्रत्यक्षं दृश्यते दिवि॥",
+    "translation": "The revolutions of the planets alongside the stellar constellations are expounded; the orbital paths of the Sun and all heavenly bodies are visibly observed in the celestial dome.",
+    "domain": "Astronomy",
+    "source": "Surya Siddhanta Tradition",
+    "reference": "Madhyamadhikara (Traditional didactic shloka)",
+    "verification_status": "unverified",
+    "keywords": "Planets, Orbit, Graha, Constellations, Surya"
+  },
+  {
+    "passage_id": "ASTRO-BS-001",
+    "sanskrit": "अङ्कानां वामतो गतिरिति गणितशास्त्रे नियमः। शून्यं सर्वत्र योगे सममवतिष्ठते॥",
+    "translation": "The place-value arrangement of numerical digits proceeds from right to left in mathematical computation. Zero added to any quantity leaves it unchanged.",
+    "domain": "Astronomy",
+    "source": "Traditional Indian Ganita Maxim",
+    "reference": "Aphoristic maxim (citing Lokavibhaga / Brahmasphutasiddhanta principles)",
+    "verification_status": "unverified",
+    "keywords": "Decimal System, Zero, Shunya, Place Value, Mathematics"
+  }
+]

@@ -20,7 +20,7 @@
     <nav class="navbar navbar-expand-lg navbar-light navbar-sanskrypt sticky-top">
         <div class="container">
             <a class="navbar-brand brand-logo" href="{{ url_for('index') }}">
-                <i class="bi bi-book-half" style="color: #d97706;"></i> SansKrypt
+                <i class="bi bi-book-half" style="color: var(--primary-gold);"></i> SansKrypt
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -40,6 +40,11 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint in ['search_view', 'search_query'] %}active{% endif %}" href="{{ url_for('search_view') }}">
                             <i class="bi bi-search me-1"></i> Search
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['ask_view', 'ask_query'] %}active{% endif %}" href="{{ url_for('ask_view') }}">
+                            <i class="bi bi-chat-dots me-1" style="color: var(--primary-gold);"></i> Ask
                         </a>
                     </li>
                     <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
@@ -72,11 +77,11 @@
     </main>
 
     <!-- Footer -->
-    <footer class="mt-5 py-4 border-top bg-white text-center text-muted small">
+    <footer class="mt-5 py-4 border-top text-center text-muted small">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6 text-md-start mb-2 mb-md-0">
-                    <span class="text-dark fw-bold">SansKrypt</span> &mdash; Sanskrit Manuscript Digitization, Translation & Knowledge Base
+                    <span class="fw-bold" style="color: var(--text-main);">SansKrypt</span> &mdash; Sanskrit Manuscript Digitization, Translation & Knowledge Base
                 </div>
                 <div class="col-md-6 text-md-end">
                     <span class="badge bg-light text-secondary border">Preserving Ancient Sanskrit Heritage</span>

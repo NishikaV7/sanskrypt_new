@@ -44,7 +44,8 @@ from translation import translate_text
 from explain_classify import (
     generate_explanation,
     extract_keywords,
-    classify_content
+    classify_content,
+    normalize_to_three_domains
 )
 from database import (
     db,
@@ -60,6 +61,13 @@ from search import (
     search_by_keyword,
     search_by_classification,
     search_by_text
+)
+from rag_service import (
+    query_rag_pipeline,
+    get_active_embedding_model_name,
+    get_embedding_model_status,
+    index_manuscript,
+    delete_manuscript_from_index
 )
 
 # Setup logging
@@ -208,7 +216,11 @@ def upload_manuscript():
         logger.info("[Stage 5/5] Generating LLM explanation, keywords, and classification...")
         explanation = generate_explanation(ocr_text, translated_text)
         keywords = extract_keywords(ocr_text, translated_text)
-        classification = classify_content(ocr_text, translated_text)
+        raw_classification = classify_content(ocr_text, translated_text)
+        if raw_classification in ("Needs Review", "needs_review", "General/Other"):
+            classification = "Needs Review"
+        else:
+            classification = normalize_to_three_domains(raw_classification)
 
         # Generate default title if none provided
         title = user_title if user_title else f"Manuscript ({classification}) - {unique_prefix}"
@@ -226,6 +238,23 @@ def upload_manuscript():
             classification=classification,
             status=status
         )
+
+        # Stage 6: Automatic Vector Indexing into ChromaDB for Dynamic RAG
+        try:
+            logger.info(f"[Stage 6] Indexing manuscript #{manuscript.id} into ChromaDB...")
+            indexed_chunks = index_manuscript(
+                manuscript_id=manuscript.id,
+                sanskrit_text=ocr_text,
+                translation=translated_text,
+                domain=classification,
+                title=title,
+                status=status,
+                ocr_confidence=ocr_confidence,
+                keywords=keywords
+            )
+            logger.info(f"[Stage 6] Successfully indexed {indexed_chunks} chunks for manuscript #{manuscript.id}.")
+        except Exception as idx_err:
+            logger.error(f"Auto-indexing failed for manuscript #{manuscript.id}: {idx_err}", exc_info=True)
 
         flash("Manuscript processed and digitized successfully!", "success")
         return redirect(url_for("view_manuscript", manuscript_id=manuscript.id))
@@ -294,6 +323,79 @@ def search_query():
     )
 
 
+@app.route("/ask", methods=["GET"])
+def ask_view():
+    """Renders the natural-language question and answer (RAG) interface."""
+    query = request.args.get("query", "").strip()
+    domain = request.args.get("domain", "all").strip()
+    source_filter = request.args.get("source_filter", "all").strip()
+    manuscript_id = request.args.get("manuscript_id", "").strip() or None
+
+    rag_result = None
+    if query:
+        api_key = session.get("gemini_api_key", "")
+        try:
+            rag_result = query_rag_pipeline(
+                query=query,
+                domain=domain,
+                source_filter=source_filter,
+                manuscript_id=manuscript_id,
+                gemini_key=api_key
+            )
+        except Exception as e:
+            logger.error(f"RAG query error: {str(e)}", exc_info=True)
+            flash("An error occurred during semantic retrieval or answer generation.", "error")
+
+    return render_template(
+        "ask.html",
+        rag_result=rag_result,
+        current_query=query,
+        current_domain=domain,
+        current_source_filter=source_filter,
+        current_manuscript_id=manuscript_id,
+        active_embedding_model=get_active_embedding_model_name(),
+        model_status=get_embedding_model_status()
+    )
+
+
+@app.route("/ask", methods=["POST"])
+def ask_query():
+    """Processes natural-language questions and returns evidence-grounded answers."""
+    query = request.form.get("query", "").strip()
+    domain = request.form.get("domain", "all").strip()
+    source_filter = request.form.get("source_filter", "all").strip()
+    manuscript_id = request.form.get("manuscript_id", "").strip() or None
+    api_key = session.get("gemini_api_key", "")
+
+    if not query:
+        flash("Please enter a question to search the repository.", "warning")
+        return redirect(url_for("ask_view", manuscript_id=manuscript_id))
+
+    try:
+        rag_result = query_rag_pipeline(
+            query=query,
+            domain=domain,
+            source_filter=source_filter,
+            manuscript_id=manuscript_id,
+            gemini_key=api_key
+        )
+    except Exception as e:
+        logger.error(f"RAG pipeline failure: {str(e)}", exc_info=True)
+        flash("An unexpected error occurred while processing your question.", "error")
+        rag_result = None
+
+    return render_template(
+        "ask.html",
+        rag_result=rag_result,
+        current_query=query,
+        current_domain=domain,
+        current_source_filter=source_filter,
+        current_manuscript_id=manuscript_id,
+        active_embedding_model=get_active_embedding_model_name(),
+        model_status=get_embedding_model_status()
+    )
+
+
 @app.route("/manuscripts", methods=["GET"])
 def list_repository():
     """Lists all digitized manuscripts in the repository with optional status/domain filtering."""
@@ -335,6 +437,9 @@ def delete_manuscript_route(manuscript_id: int):
                     os.remove(path)
                 except Exception as file_err:
                     logger.warning(f"Could not remove file {path}: {str(file_err)}")
+
+        # Prune indexed chunks from ChromaDB for this manuscript
+        delete_manuscript_from_index(manuscript_id)
 
         delete_manuscript(manuscript_id)
         flash(f"Manuscript #{manuscript_id} was deleted successfully.", "success")
@@ -435,4 +540,26 @@ if __name__ == "__main__":
     print("  Local Server Starting on http://127.0.0.1:5000")
     print("="*60 + "\n")
     
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # Configure reliable development server reloader
+    # Using 'stat' reloader avoids watchdog recursively scanning Python standard library
+    # and site-packages on Windows, preventing continuous restart loops.
+    use_reloader = os.environ.get("FLASK_USE_RELOADER", "true").lower() in ("true", "1", "yes")
+    reloader_type = os.environ.get("FLASK_RELOADER_TYPE", "stat")
+    exclude_patterns = [
+        "*site-packages*",
+        "*Python313*",
+        "*Lib*",
+        "*.git*",
+        "*.pytest_cache*",
+        "*__pycache__*",
+        "*chroma_db*"
+    ]
+
+    app.run(
+        host="127.0.0.1",
+        port=5000,
+        debug=True,
+        use_reloader=use_reloader,
+        reloader_type=reloader_type,
+        exclude_patterns=exclude_patterns
+    )

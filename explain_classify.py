@@ -321,7 +321,7 @@ def classify_manuscript(sanskrit_text: str, translated_text: str) -> str:
         "Vedic Sciences": ["yajna", "ritual", "homa", "mantra", "veda", "rigveda", "samaveda", "yajurveda", "altar", "priest"]
     }
 
-    scores = {category: 0 for category in CANONICAL_CATEGORIES}
+    scores = {category: 0 for category in INDICATORS}
 
     for category, keywords in INDICATORS.items():
         for kw in keywords:
@@ -334,6 +334,27 @@ def classify_manuscript(sanskrit_text: str, translated_text: str) -> str:
         return best_category
 
     return "Philosophy"
+
+
+def normalize_to_three_domains(category: str) -> str:
+    """
+    Normalizes any granular category string to the three user-facing canonical domains:
+    1. Philosophy
+    2. Ayurveda
+    3. Astronomy & Mathematics
+    """
+    cat = (category or "").strip()
+    if cat in ("Astronomy", "Mathematics", "Astronomy & Mathematics"):
+        return "Astronomy & Mathematics"
+    if cat == "Ayurveda":
+        return "Ayurveda"
+    return "Philosophy"
+
+
+def classify_manuscript_three_domains(sanskrit_text: str, translated_text: str) -> str:
+    """Classifies manuscript directly into one of the three canonical domains."""
+    raw_cat = classify_manuscript(sanskrit_text, translated_text)
+    return normalize_to_three_domains(raw_cat)
 
 
 # Alias for backwards compatibility

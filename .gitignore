@@ -50,6 +50,7 @@ uploads/processed/
 *.sqlite
 *.sqlite3
 sanskrypt.db
+chroma_db/
 
 # ------------------------------------------------------------------------------
 # 5. PYTHON BYTECODE & COMPILATION CACHES

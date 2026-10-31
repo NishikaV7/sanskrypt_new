@@ -83,18 +83,13 @@ OCR_MAX_AVAGRAHA_RATIO = float(os.getenv("OCR_MAX_AVAGRAHA_RATIO", "0.05"))
 TRANSLATION_MODEL_NAME = os.getenv("TRANSLATION_MODEL", "google/flan-t5-small")
 LLM_MODEL_NAME = os.getenv("LLM_MODEL", "google/flan-t5-small")
 
-# Predefined Knowledge Categories
+# Predefined Knowledge Categories (Restricted to Three Canonical Domains)
 CANONICAL_CATEGORIES = [
     "Philosophy",
     "Ayurveda",
-    "Astronomy",
-    "Literature",
-    "Mathematics",
-    "Vedic Sciences",
-    "Grammar",
-    "Yoga & Spirituality",
-    "General/Other"
+    "Astronomy & Mathematics"
 ]
+THREE_DOMAINS = CANONICAL_CATEGORIES
 
 # Flask Secret Key
 SECRET_KEY = os.getenv("SECRET_KEY", "sanskrypt-major-secret-key-2026")
