@@ -80,27 +80,27 @@
                 <div class="mt-3 pt-3 border-top">
                     <div class="small text-muted fw-semibold mb-2">Sample Scholarly Questions:</div>
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ url_for('ask_query') }}?query=What+are+the+three+doshas+in+Ayurveda&domain=Ayurveda"
+                        <a href="{{ url_for('ask_view') }}?query=What+are+the+three+doshas+in+Ayurveda&domain=Ayurveda"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🌿 Ayurveda: Three Doshas
                         </a>
-                        <a href="{{ url_for('ask_query') }}?query=What+is+the+definition+of+health+according+to+Sushruta&domain=Ayurveda"
+                        <a href="{{ url_for('ask_view') }}?query=What+is+the+definition+of+health+according+to+Sushruta&domain=Ayurveda"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🌿 Ayurveda: Definition of Health (Svastha)
                         </a>
-                        <a href="{{ url_for('ask_query') }}?query=What+does+the+Gita+say+about+duty+and+the+fruits+of+action&domain=Philosophy"
+                        <a href="{{ url_for('ask_view') }}?query=What+does+the+Gita+say+about+duty+and+the+fruits+of+action&domain=Philosophy"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🕉️ Philosophy: Nishkama Karma
                         </a>
-                        <a href="{{ url_for('ask_query') }}?query=What+does+the+Upanishad+state+about+truth+and+victory&domain=Philosophy"
+                        <a href="{{ url_for('ask_view') }}?query=What+does+the+Upanishad+state+about+truth+and+victory&domain=Philosophy"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🕉️ Philosophy: Satyameva Jayate
                         </a>
-                        <a href="{{ url_for('ask_query') }}?query=How+did+Aryabhata+explain+the+apparent+motion+of+stars&domain=Astronomy+%26+Mathematics"
+                        <a href="{{ url_for('ask_view') }}?query=How+did+Aryabhata+explain+the+apparent+motion+of+stars&domain=Astronomy+%26+Mathematics"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🔭 Astronomy: Earth's Rotation
                         </a>
-                        <a href="{{ url_for('ask_query') }}?query=What+is+the+rule+of+digits+and+zero+in+Indian+mathematics&domain=Astronomy+%26+Mathematics"
+                        <a href="{{ url_for('ask_view') }}?query=What+is+the+rule+of+digits+and+zero+in+Indian+mathematics&domain=Astronomy+%26+Mathematics"
                            class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill small">
                             🔭 Math: Calculation &amp; Zero
                         </a>
@@ -120,6 +120,11 @@
                     <h4 class="fw-bold mb-0 d-flex align-items-center">
                         <i class="bi bi-lightbulb me-2" style="color: var(--primary-gold);"></i> Grounded Answer
                     </h4>
+                    {% if rag_result.detected_domain and rag_result.detected_domain != 'all' and current_domain == 'all' %}
+                    <span class="badge bg-secondary-subtle text-secondary border small">
+                        <i class="bi bi-compass me-1"></i> Domain Routed: {{ rag_result.detected_domain }}
+                    </span>
+                    {% endif %}
                 </div>
 
                 <div class="p-3 rounded parchment-box mb-3">

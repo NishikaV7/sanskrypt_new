@@ -29,6 +29,7 @@ from rag_service import (
     reset_chroma_client,
     get_embedding_model_status,
     get_active_embedding_model_name,
+    detect_query_domains,
     MIN_EVIDENCE_SIMILARITY
 )
 
@@ -431,5 +432,195 @@ def test_real_persistent_chroma_index():
         assert sample["metadatas"][0]["verification_status"] == "verified_canonical"
     finally:
         reset_chroma_client()
+
+
+# ---------------------------------------------------------------------------
+# TEST 12: Query Domain Understanding & Intent Routing
+# ---------------------------------------------------------------------------
+def test_query_domain_intent_detection():
+    """Verifies that natural-language queries are correctly routed to their knowledge domains."""
+    # Ayurveda query
+    ayur = detect_query_domains("What are the three doshas in Ayurveda?")
+    assert ayur["primary_domain"] == "Ayurveda"
+    assert "Ayurveda" in ayur["target_domains"]
+
+    # Astronomy & Mathematics query
+    astro = detect_query_domains("Explain the planetary calculations described in the manuscript.")
+    assert astro["primary_domain"] == "Astronomy & Mathematics"
+    assert "Astronomy & Mathematics" in astro["target_domains"]
+
+    # Philosophy query
+    phil = detect_query_domains("Explain the concept of Atman in the Bhagavad Gita.")
+    assert phil["primary_domain"] == "Philosophy"
+    assert "Philosophy" in phil["target_domains"]
+
+    # Genuine mixed-domain query
+    mixed = detect_query_domains("How does Samkhya philosophy explain the gunas and doshas in health?")
+    assert mixed["is_mixed"] is True
+    assert "Ayurveda" in mixed["target_domains"]
+    assert "Philosophy" in mixed["target_domains"]
+
+    # Unrelated/generic query falls back to 'all'
+    unrelated = detect_query_domains("How do I bake a chocolate cake?")
+    assert unrelated["primary_domain"] == "all"
+    assert unrelated["target_domains"] == ["all"]
+
+
+# ---------------------------------------------------------------------------
+# TEST 13: Removal of Unconditional Upload Boost
+# ---------------------------------------------------------------------------
+def test_no_unconditional_upload_boost(temp_chroma_dir, mock_model):
+    """Verifies that an irrelevant uploaded chunk is not artificially boosted above a relevant canonical passage."""
+    col = get_chroma_collection(persist_dir=temp_chroma_dir, collection_name="test_boost_calib")
+
+    # Seed one authoritative reference passage and one weak uploaded chunk
+    col.add(
+        ids=["REF-AYUR-CANONICAL", "UPLOAD-M99-C1"],
+        documents=[
+            "Domain: Ayurveda | Source: Ashtanga Hridaya\nTranslation: Vata, Pitta, and Kapha are the three doshas.",
+            "Domain: Ayurveda | Source: Uploaded #99\nTranslation: Random herbal leaf without mention of doshas."
+        ],
+        metadatas=[
+            {
+                "passage_id": "REF-AYUR-CANONICAL",
+                "source_type": "reference_canonical",
+                "domain": "Ayurveda",
+                "source": "Ashtanga Hridaya",
+                "reference": "1.6",
+                "verification_status": "verified_canonical",
+                "sanskrit": "वायुः पित्तं कफश्चेति त्रयो दोषाः समासतः",
+                "translation": "Vata, Pitta, and Kapha are the three doshas.",
+                "keywords": "Vata, Pitta, Kapha, Tridosha"
+            },
+            {
+                "passage_id": "UPLOAD-M99-C1",
+                "source_type": "uploaded_manuscript",
+                "domain": "Ayurveda",
+                "source": "Manuscript #99",
+                "reference": "Chunk 1",
+                "verification_status": "uploaded_manuscript",
+                "sanskrit": "पत्रं पुष्पम्",
+                "translation": "A leaf and a flower.",
+                "keywords": "leaf, flower"
+            }
+        ],
+        embeddings=mock_model.encode([
+            "Vata Pitta Kapha doshas Ashtanga Hridaya",
+            "xyz unrelated forest flower leaf"
+        ]).tolist()
+    )
+
+    passages = retrieve_relevant_passages(
+        query="Vata Pitta Kapha doshas Ashtanga Hridaya",
+        domain="Ayurveda",
+        top_k=2,
+        min_similarity=0.0,
+        collection=col,
+        model=mock_model
+    )
+
+    assert len(passages) >= 1
+    # Authoritative canonical passage must rank first
+    assert passages[0]["passage_id"] == "REF-AYUR-CANONICAL"
+
+
+# ---------------------------------------------------------------------------
+# TEST 14: Cross-Domain Isolation with domain='all'
+# ---------------------------------------------------------------------------
+def test_cross_domain_isolation_with_domain_all(temp_chroma_dir, mock_model, sample_test_corpus):
+    """Verifies that query domain routing scopes retrieval to the intended domain when domain='all'."""
+    col = get_chroma_collection(persist_dir=temp_chroma_dir, collection_name="test_col_isolation")
+    index_corpus(corpus_records=sample_test_corpus, collection=col, model=mock_model)
+
+    # Ayurveda question with domain='all'
+    ayur_passages = retrieve_relevant_passages(
+        query="What are the three doshas in Ayurveda?",
+        domain="all",
+        top_k=3,
+        min_similarity=0.0,
+        collection=col,
+        model=mock_model
+    )
+    assert len(ayur_passages) >= 1
+    for p in ayur_passages:
+        assert p["domain"] == "Ayurveda"
+        assert p["domain"] != "Astronomy"
+        assert p["domain"] != "Philosophy"
+
+    # Astronomy question with domain='all'
+    astro_passages = retrieve_relevant_passages(
+        query="Explain the planetary calculations and sine table in the manuscript.",
+        domain="all",
+        top_k=3,
+        min_similarity=0.0,
+        collection=col,
+        model=mock_model
+    )
+    assert len(astro_passages) >= 1
+    for p in astro_passages:
+        assert p["domain"] in ("Astronomy", "Mathematics", "Astronomy & Mathematics")
+        assert p["domain"] != "Ayurveda"
+
+
+# ---------------------------------------------------------------------------
+# TEST 15: Uploaded Manuscript Retrieval by Semantic Query
+# ---------------------------------------------------------------------------
+def test_uploaded_manuscript_retrieval(temp_chroma_dir, mock_model):
+    """Verifies that uploaded manuscript chunks are retrievable by content-specific queries."""
+    col = get_chroma_collection(persist_dir=temp_chroma_dir, collection_name="test_col_upload_retrieval")
+
+    col.add(
+        ids=["UPLOAD-M4-C3", "REF-AYUR-GENERIC"],
+        documents=[
+            "Domain: Ayurveda | Source: Manuscript #4\nTranslation: Kunduru resin is sharp, pacifier of phlegm.",
+            "Domain: Ayurveda | Source: General Reference\nTranslation: General guidelines on seasons."
+        ],
+        metadatas=[
+            {
+                "passage_id": "UPLOAD-M4-C3",
+                "manuscript_id": 4,
+                "source_type": "uploaded_manuscript",
+                "domain": "Ayurveda",
+                "source": "Manuscript #4",
+                "reference": "Chunk 3",
+                "verification_status": "uploaded_manuscript",
+                "sanskrit": "कुन्दुरुः कफशामकः",
+                "translation": "Kunduru resin is sharp, pacifier of phlegm.",
+                "keywords": "Kunduru, resin, phlegm"
+            },
+            {
+                "passage_id": "REF-AYUR-GENERIC",
+                "source_type": "reference_canonical",
+                "domain": "Ayurveda",
+                "source": "General Reference",
+                "reference": "1.1",
+                "verification_status": "verified_canonical",
+                "sanskrit": "ऋतुचर्या",
+                "translation": "General guidelines on seasons.",
+                "keywords": "seasons, ritu"
+            }
+        ],
+        embeddings=mock_model.encode([
+            "Kunduru resin is sharp, pacifier of phlegm.",
+            "General guidelines on seasons."
+        ]).tolist()
+    )
+
+    passages = retrieve_relevant_passages(
+        query="What are the properties of Kunduru resin in the manuscript?",
+        domain="Ayurveda",
+        top_k=2,
+        min_similarity=0.0,
+        collection=col,
+        model=mock_model
+    )
+
+    assert len(passages) >= 1
+    top = passages[0]
+    assert top["passage_id"] == "UPLOAD-M4-C3"
+    assert top["is_uploaded"] is True
+    assert top["source_type"] == "uploaded_manuscript"
+    assert top["manuscript_id"] == 4
+
 
 

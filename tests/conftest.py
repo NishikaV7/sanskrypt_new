@@ -30,17 +30,27 @@ from database import db, Manuscript
 @pytest.fixture
 def app():
     """Configures the Flask application with an in-memory SQLite database for testing."""
+    from sqlalchemy import create_engine
     flask_app.config.update({
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "WTF_CSRF_ENABLED": False
     })
 
+    sa = flask_app.extensions.get("sqlalchemy")
+    orig_engines = sa._app_engines.get(flask_app) if sa else None
+    mem_engine = create_engine("sqlite:///:memory:")
+    if sa:
+        sa._app_engines[flask_app] = {None: mem_engine}
+
     with flask_app.app_context():
         db.create_all()
         yield flask_app
         db.session.remove()
         db.drop_all()
+        mem_engine.dispose()
+        if sa and orig_engines:
+            sa._app_engines[flask_app] = orig_engines
 
 
 @pytest.fixture

@@ -511,6 +511,135 @@ ENGLISH_STOP_WORDS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Domain Terminology Lexicons & Query Intent Understanding
+# ---------------------------------------------------------------------------
+
+DOMAIN_INTENT_LEXICON = {
+    "Ayurveda": {
+        "tokens": {
+            "dosha", "doshas", "vata", "pitta", "kapha", "tridosha", "tridoshas",
+            "ayurveda", "ayurvedic", "svastha", "swastha", "health", "disease",
+            "medicine", "cure", "healing", "humor", "humors", "bodily",
+            "sushruta", "charaka", "vagbhata", "ashtanga", "hridaya", "samhita",
+            "rasayana", "elixir", "dhatu", "dhatus", "mala", "agni", "phlegm", "bile", "wind",
+            "herbs", "herbal", "medicinal", "treatment", "nighantu", "guggulu", "resin",
+            "kunduru", "sallaki", "haritaki", "triphala", "bhasma", "pathya", "chikitsa"
+        },
+        "devanagari": {
+            "दोष", "दोषाः", "वात", "पित्त", "कफ", "त्रिदोष", "आयुर्वेद", "स्वास्थ्य",
+            "चरक", "सुश्रुत", "वाग्भट", "अष्टाङ्ग", "हृदय", "संहिता", "रसायन", "अग्नि",
+            "धातु", "मल", "भैषज्य", "चिकित्सा", "निघण्टु", "गुग्गुलु", "कुन्दुरु", "पथ्य"
+        }
+    },
+    "Astronomy & Mathematics": {
+        "tokens": {
+            "astronomy", "astronomical", "mathematics", "mathematical", "math",
+            "planet", "planets", "planetary", "orbit", "orbits", "eclipse",
+            "celestial", "star", "stars", "sun", "moon", "calculation", "calculations",
+            "ganita", "sine", "sines", "cosine", "jya", "kotijya", "trigonometry",
+            "zero", "shunya", "aryabhata", "aryabhatiya", "surya", "siddhanta",
+            "brahmagupta", "bhaskara", "nakshatra", "graha", "grahas", "rashi",
+            "lagna", "equinox", "solstice", "epicycle", "retrograde", "horoscope",
+            "astrology", "astrological", "drekkana", "navamsha", "hora", "house",
+            "houses", "ascendant", "longitude", "latitude", "yuga", "kalpa"
+        },
+        "devanagari": {
+            "गणित", "ज्योतिष", "ग्रह", "ग्रहाः", "नक्षत्र", "सूर्यसिद्धान्त", "आर्यभट",
+            "आर्यभटीय", "शून्य", "ज्या", "कोटिज्या", "राशि", "लग्न", "ग्रहण", "होरा",
+            "द्रेष्काण", "नवांश", "भास्कर", "ब्रह्मगुप्त", "सूर्य", "चन्द्र"
+        }
+    },
+    "Philosophy": {
+        "tokens": {
+            "philosophy", "philosophical", "atman", "brahman", "soul", "self",
+            "karma", "dharma", "moksha", "liberation", "gita", "bhagavad",
+            "upanishad", "upanishads", "darshana", "samkhya", "vedanta", "yoga",
+            "maya", "illusion", "purusha", "prakriti", "avidya", "jiva",
+            "satyameva", "jayate", "truth", "righteousness", "rebirth",
+            "consciousness", "meditation", "krishna", "arjuna", "brahma",
+            "advaita", "buddhi", "manas", "adhyatma", "jnana", "bhakti"
+        },
+        "devanagari": {
+            "आत्मन्", "आत्मा", "ब्रह्मन्", "ब्रह्म", "कर्म", "धर्म", "मोक्ष",
+            "गीता", "भगवद्", "उपनिषद्", "दर्शन", "सांख्य", "वेदान्त", "योग",
+            "माया", "पुरुष", "प्रकृति", "अविद्या", "जीव", "सत्यमेव", "जयते",
+            "ज्ञान", "भक्ति", "अध्यात्म"
+        }
+    }
+}
+
+
+def detect_query_domains(query: str) -> Dict[str, Any]:
+    """
+    Analyzes the user's natural language or Sanskrit query to identify its intended
+    knowledge domain(s) before retrieval, preventing cross-domain noise.
+    Supports single-domain routing, genuine cross-domain intent, and unconstrained fallback.
+    """
+    clean_q = query.strip()
+    if not clean_q:
+        return {"primary_domain": "all", "target_domains": ["all"], "confidence": 0.0, "is_mixed": False}
+
+    q_lower = clean_q.lower()
+    words = set(re.findall(r"\w+", q_lower))
+
+    scores = {}
+    for dom, lex in DOMAIN_INTENT_LEXICON.items():
+        score = 0.0
+        for tok in lex["tokens"]:
+            if tok in words:
+                score += 2.0
+            elif len(tok) >= 5 and tok in q_lower:
+                score += 1.0
+        for dev in lex["devanagari"]:
+            if dev in clean_q:
+                score += 3.0
+        scores[dom] = score
+
+    sorted_domains = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    top_dom, top_score = sorted_domains[0]
+    second_dom, second_score = sorted_domains[1]
+
+    if top_score < 1.5:
+        return {
+            "primary_domain": "all",
+            "target_domains": ["all"],
+            "confidence": 0.0,
+            "is_mixed": False,
+            "scores": scores
+        }
+
+    # Detect genuine cross-domain queries (e.g. Samkhya & Ayurveda / Yoga & Health)
+    if second_score >= 3.0 and second_score >= 0.55 * top_score:
+        return {
+            "primary_domain": top_dom,
+            "target_domains": [top_dom, second_dom],
+            "confidence": min(1.0, top_score / 4.0),
+            "is_mixed": True,
+            "scores": scores
+        }
+
+    return {
+        "primary_domain": top_dom,
+        "target_domains": [top_dom],
+        "confidence": min(1.0, top_score / 3.0),
+        "is_mixed": False,
+        "scores": scores
+    }
+
+
+def get_existing_manuscript_ids() -> Optional[set]:
+    """
+    Retrieves set of valid manuscript IDs from database to prevent orphan vector citations.
+    Fails safely if running standalone without Flask context or database.
+    """
+    try:
+        from database import db, Manuscript
+        return set(r[0] for r in db.session.query(Manuscript.id).all())
+    except Exception:
+        return None
+
+
 def calculate_keyword_overlap(query: str, passage_meta: Dict[str, Any]) -> float:
     """
     Calculates lexical overlap ratio between the query and passage text/keywords
@@ -563,7 +692,7 @@ def retrieve_relevant_passages(
     domain: Optional[str] = None,
     source_filter: Optional[str] = "all",
     manuscript_id: Optional[int] = None,
-    top_k: int = 3,
+    top_k: int = 4,
     min_similarity: float = MIN_EVIDENCE_SIMILARITY,
     collection=None,
     model=None
@@ -572,7 +701,8 @@ def retrieve_relevant_passages(
     Embeds the user query and retrieves the most relevant manuscript passages using
     dense cosine similarity and hybrid scoring across both uploaded manuscripts
     and reference knowledge.
-    Prioritizes uploaded manuscript evidence as primary source.
+    Applies domain understanding to filter out unrelated domains while ensuring
+    relevant uploaded manuscripts and canonical treatises are properly ranked.
     """
     if not query or not query.strip():
         return []
@@ -586,6 +716,24 @@ def retrieve_relevant_passages(
 
     emb_model = model if model is not None else get_embedding_model()
 
+    # 1. Determine effective query domains (user-specified or auto-detected)
+    detected = detect_query_domains(clean_query)
+    effective_domains = []
+
+    if domain and domain.lower() != "all":
+        effective_domains = [domain.strip()]
+    elif detected["target_domains"] != ["all"]:
+        effective_domains = detected["target_domains"]
+
+    # Expand domain aliases
+    expanded_domains = []
+    for d in effective_domains:
+        if d in ("Astronomy & Mathematics", "Astronomy and Mathematics", "Astronomy", "Mathematics"):
+            expanded_domains.extend(["Astronomy", "Mathematics", "Astronomy & Mathematics"])
+        else:
+            expanded_domains.append(d)
+    expanded_domains = list(set(expanded_domains))
+
     # Apply task-specific instruction prefix only if asymmetric model (e.g. EmbeddingGemma)
     active_name = getattr(emb_model, "_model_name", None) or get_active_embedding_model_name()
     query_text = format_query_for_embedding(clean_query, active_name)
@@ -594,13 +742,10 @@ def retrieve_relevant_passages(
 
     filter_clauses = []
 
-    # Domain filter
-    if domain and domain.lower() != "all":
-        d_clean = domain.strip()
-        if d_clean in ("Astronomy & Mathematics", "Astronomy and Mathematics", "Astronomy", "Mathematics"):
-            filter_clauses.append({"domain": {"$in": ["Astronomy", "Mathematics", "Astronomy & Mathematics"]}})
-        else:
-            filter_clauses.append({"domain": d_clean})
+    # Domain filter: allow target domains plus unassigned/uncertain uploaded manuscripts for content evaluation
+    if expanded_domains:
+        allowed_domains = expanded_domains + ["General/Other", "Uncertain", "General"]
+        filter_clauses.append({"domain": {"$in": allowed_domains}})
 
     # Source filter ('uploaded' vs 'reference' vs 'all')
     if source_filter and source_filter.lower() in ("uploaded", "uploaded_manuscripts", "manuscripts"):
@@ -622,8 +767,8 @@ def retrieve_relevant_passages(
     else:
         where_filter = None
 
-    # Query ChromaDB (fetch candidate pool for hybrid re-ranking, expanded to 25 while respecting collection size)
-    fetch_n = min(max(top_k * 8, 25), col.count())
+    # Query ChromaDB (fetch candidate pool for hybrid re-ranking, expanded to 30 while respecting collection size)
+    fetch_n = min(max(top_k * 8, 30), col.count())
     try:
         results = col.query(
             query_embeddings=[query_vector_list],
@@ -631,7 +776,7 @@ def retrieve_relevant_passages(
             where=where_filter
         )
     except Exception as q_err:
-        logger.warning(f"ChromaDB query with where={where_filter} failed: {q_err}. Falling back without filter.")
+        logger.warning(f"ChromaDB query with where={where_filter} failed: {q_err}. Falling back without where filter.")
         results = col.query(
             query_embeddings=[query_vector_list],
             n_results=fetch_n
@@ -645,15 +790,38 @@ def retrieve_relevant_passages(
     distances = results["distances"][0] if "distances" in results else [0.0] * len(ids)
     metadatas = results["metadatas"][0] if "metadatas" in results else [{}] * len(ids)
 
+    # Optional orphan check to ensure uploaded manuscripts exist in DB
+    existing_m_ids = get_existing_manuscript_ids()
+
     for pid, dist, meta in zip(ids, distances, metadatas):
         # Convert cosine distance to cosine similarity (1.0 - distance)
         cosine_sim = max(0.0, min(1.0, 1.0 - float(dist)))
         kw_score = calculate_keyword_overlap(clean_query, meta)
 
         is_uploaded = (meta.get("source_type") == "uploaded_manuscript")
-        # Give uploaded manuscript evidence priority boost
-        priority_boost = 0.12 if is_uploaded else 0.0
-        hybrid_score = round(min(1.0, 0.80 * cosine_sim + 0.20 * kw_score + priority_boost), 4)
+
+        # Exclude orphan vectors of deleted manuscripts
+        manuscript_id_val = meta.get("manuscript_id")
+        if is_uploaded and manuscript_id_val is not None and existing_m_ids is not None:
+            try:
+                if int(manuscript_id_val) not in existing_m_ids:
+                    logger.debug(f"Skipping orphan vector {pid} for deleted manuscript #{manuscript_id_val}")
+                    continue
+            except (ValueError, TypeError):
+                pass
+
+        # Domain boundary protection: eliminate candidates with explicitly conflicting domains
+        cand_domain = meta.get("domain", "")
+        if expanded_domains and cand_domain not in expanded_domains and cand_domain not in ("General/Other", "Uncertain", "General"):
+            continue
+
+        # Calibrated Hybrid Scoring:
+        # 1. Semantic similarity dominates (85% weight)
+        # 2. Keyword overlap provides supplementary precision (15% weight), but only if semantic similarity >= 0.35
+        # 3. Relevance-conditioned upload boost: modest +0.03 only when semantic relevance is genuinely high (>= 0.48)
+        effective_kw = kw_score if cosine_sim >= 0.35 else 0.0
+        upload_boost = 0.03 if (is_uploaded and cosine_sim >= 0.48) else 0.0
+        hybrid_score = round(min(1.0, 0.85 * cosine_sim + 0.15 * effective_kw + upload_boost), 4)
 
         candidates.append({
             "passage_id": pid,
@@ -670,13 +838,36 @@ def retrieve_relevant_passages(
             "hybrid_score": hybrid_score
         })
 
-    # Sort primarily by hybrid score (with upload boost), favoring uploaded on ties
+    # Sort primarily by hybrid score, favoring uploaded manuscripts on ties
     candidates.sort(key=lambda x: (x["hybrid_score"], 1 if x.get("is_uploaded") else 0), reverse=True)
 
     # Filter by minimum similarity score
-    filtered = [c for c in candidates if c["similarity_score"] >= min_similarity or c["hybrid_score"] >= min_similarity]
+    valid_candidates = [c for c in candidates if c["similarity_score"] >= min_similarity or c["hybrid_score"] >= min_similarity]
 
-    return filtered[:top_k]
+    # Balanced evidence selection when searching across all sources (source_filter == 'all'):
+    # Ensures both top uploaded manuscript evidence and authoritative reference treatises are represented
+    # while preserving strict hybrid score ranking
+    if source_filter == "all" and len(valid_candidates) > top_k:
+        uploaded_cands = [c for c in valid_candidates if c["is_uploaded"] and c["similarity_score"] >= 0.45]
+        ref_cands = [c for c in valid_candidates if not c["is_uploaded"] and c["similarity_score"] >= 0.40]
+
+        if uploaded_cands and ref_cands:
+            selected_set = {uploaded_cands[0]["passage_id"], ref_cands[0]["passage_id"]}
+            selected = [c for c in valid_candidates if c["passage_id"] in selected_set]
+            for c in valid_candidates:
+                if len(selected) >= top_k:
+                    break
+                if c["passage_id"] not in selected_set:
+                    selected.append(c)
+                    selected_set.add(c["passage_id"])
+            # Sort selected items strictly by hybrid score
+            selected.sort(key=lambda x: (x["hybrid_score"], 1 if x.get("is_uploaded") else 0), reverse=True)
+        else:
+            selected = valid_candidates[:top_k]
+    else:
+        selected = valid_candidates[:top_k]
+
+    return selected
 
 
 def build_evidence_context(passages: List[Dict[str, Any]]) -> str:
@@ -709,7 +900,8 @@ def generate_grounded_answer(
 ) -> Dict[str, Any]:
     """
     Synthesizes an evidence-grounded answer based strictly on the retrieved passages
-    using Google Gemini API. Prioritizes uploaded manuscript evidence and avoids hallucinations.
+    using Google Gemini API. Prioritizes uploaded manuscript evidence, supports canonical
+    treatises, and avoids hallucinations.
     """
     if not passages:
         return {
@@ -756,15 +948,16 @@ def generate_grounded_answer(
 
     evidence_text = build_evidence_context(passages)
     prompt = (
-        "You are a scholarly assistant for ancient Sanskrit manuscripts and classical Indian heritage.\n"
-        "Answer the user's question accurately and concisely, relying STRICTLY and ONLY on the manuscript evidence provided below.\n\n"
-        "STRICT GROUNDING RULES:\n"
-        "1. Base your answer strictly on the explicit statements in the retrieved passages and their translations.\n"
-        "2. PRIORITIZE UPLOADED MANUSCRIPT EVIDENCE as the primary source when available; use Canonical Reference Knowledge to supplement or contextualize.\n"
-        "3. Do NOT invent, extrapolate, or hallucinate verses, medical cures, or philosophical doctrines not in the text.\n"
-        "4. Explicitly cite the passage IDs and sources (e.g., '[UPLOAD-M1-C1]' or '[PHIL-BG-001] Bhagavad Gita') when making assertions.\n"
-        "5. If the provided passages only partially answer the question, clearly acknowledge the limitations of the evidence.\n"
-        "6. Distinguish clearly between original Sanskrit verses, English translations, and your brief explanation.\n\n"
+        "You are an expert scholarly assistant for ancient Sanskrit manuscripts and classical Indian heritage.\n"
+        "Synthesize a clear, accurate, and faithful answer to the user's question, relying STRICTLY and ONLY on the retrieved manuscript evidence provided below.\n\n"
+        "STRICT GROUNDING & CITATION RULES:\n"
+        "1. Base your answer strictly on the explicit statements, verses, and verified translations in the retrieved passages.\n"
+        "2. When UPLOADED MANUSCRIPT EVIDENCE is present, address it directly as primary source evidence from the user's uploaded artifacts.\n"
+        "3. When CANONICAL or REFERENCE TREATISE evidence is present, use it to provide authoritative scholarly context.\n"
+        "4. Do NOT invent, extrapolate, or hallucinate verses, cures, calculations, or doctrines not present in the retrieved text.\n"
+        "5. Explicitly cite the passage IDs and sources (e.g. '[UPLOAD-M4-C3]' or '[AYUR-AH-001] Ashtanga Hridaya') for every factual statement.\n"
+        "6. If the retrieved passages only partially address the question, clearly state what the evidence shows and what remains unaddressed. Do NOT fabricate an answer.\n"
+        "7. Format your response cleanly in clear English, quoting the original Sanskrit verse and translation where relevant.\n\n"
         f"USER QUESTION:\n{query}\n\n"
         f"RETRIEVED MANUSCRIPT EVIDENCE:\n{evidence_text}\n\n"
         "GROUNDED ANSWER:"
@@ -823,20 +1016,23 @@ def query_rag_pipeline(
     domain: Optional[str] = None,
     source_filter: Optional[str] = "all",
     manuscript_id: Optional[int] = None,
-    top_k: int = 3,
+    top_k: int = 4,
     gemini_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     End-to-end execution of the RAG pipeline across uploaded manuscripts and reference knowledge:
     1. Validates user query.
-    2. Retrieves relevant passages via MiniLM + ChromaDB (with domain, source, and manuscript filters).
-    3. Synthesizes a grounded answer via Gemini (if configured).
-    4. Returns structured results with full provenance.
+    2. Identifies question domain intent.
+    3. Retrieves relevant passages via MiniLM + ChromaDB (with domain, source, and manuscript filters).
+    4. Synthesizes a grounded answer via Gemini (if configured).
+    5. Returns structured results with full provenance and detected domain information.
     """
     if not query or not query.strip():
         return {
             "query": "",
             "domain": domain,
+            "detected_domain": "all",
+            "target_domains": ["all"],
             "source_filter": source_filter or "all",
             "manuscript_id": manuscript_id,
             "passages": [],
@@ -846,6 +1042,8 @@ def query_rag_pipeline(
         }
 
     clean_q = query.strip()
+    detected_info = detect_query_domains(clean_q)
+
     passages = retrieve_relevant_passages(
         query=clean_q,
         domain=domain,
@@ -863,6 +1061,9 @@ def query_rag_pipeline(
     return {
         "query": clean_q,
         "domain": domain or "All Domains",
+        "detected_domain": detected_info.get("primary_domain", "all"),
+        "target_domains": detected_info.get("target_domains", ["all"]),
+        "is_mixed_domain": detected_info.get("is_mixed", False),
         "source_filter": source_filter or "all",
         "manuscript_id": manuscript_id,
         "passages": passages,
